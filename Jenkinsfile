@@ -1,57 +1,57 @@
 pipeline {
-  agent any
+    agent any
 
-  stages {
-    stage('Checkout') {
-      steps { checkout scm }
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Make Script Executable') {
+            steps {
+                sh 'chmod +x build.sh'
+            }
+        }
+
+        stage('Run Build Script') {
+            steps {
+                sh './build.sh'
+            }
+        }
     }
 
-    stage('Make script executable') {
-      steps { sh 'if [ -f build.sh ]; then chmod +x build.sh; fi' }
-    }
+    post {
+        success {
+            emailext(
+                to: 'karthisv2701@gmail.com',
+                subject: "SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: """✔ BUILD SUCCESS
 
-    stage('Run build script') {
-      steps { sh './build.sh' }
-    }
+JOB: ${env.JOB_NAME}
+BUILD NUMBER: ${env.BUILD_NUMBER}
+BUILD URL: ${env.BUILD_URL}
 
-    stage('Collect artifacts') {
-      steps { sh 'ls -lah || true' }
-    }
-  }
-
-  post {
-    success {
-      archiveArtifacts artifacts: '**/*.txt, **/*.log', allowEmptyArchive: true
-      emailext(
-        to: 'karthisv2701@gmail.com',
-        subject: "SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-        body: """Build SUCCESS
-
-Job: ${env.JOB_NAME}
-Build: ${env.BUILD_NUMBER}
-URL: ${env.BUILD_URL}
-
----- last 200 lines of console ----
+---- LAST 200 LINES OF LOG ----
 ${BUILD_LOG, maxLines=200}
 """
-      )
-    }
+            )
+        }
 
-    failure {
-      archiveArtifacts artifacts: '**/*.txt, **/*.log', allowEmptyArchive: true
-      emailext(
-        to: 'karthisv2701@gmail.com',
-        subject: "FAILURE: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-        body: """Build FAILED
+        failure {
+            emailext(
+                to: 'karthisv2701@gmail.com',
+                subject: "FAILURE: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: """❌ BUILD FAILED
 
-Job: ${env.JOB_NAME}
-Build: ${env.BUILD_NUMBER}
-URL: ${env.BUILD_URL}
+JOB: ${env.JOB_NAME}
+BUILD NUMBER: ${env.BUILD_NUMBER}
+BUILD URL: ${env.BUILD_URL}
 
----- last 200 lines of console ----
+---- LAST 200 LINES OF LOG ----
 ${BUILD_LOG, maxLines=200}
 """
-      )
+            )
+        }
     }
-  }
 }
